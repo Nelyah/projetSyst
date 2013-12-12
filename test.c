@@ -30,12 +30,10 @@ typedef struct tlv{
 
 
 const gchar* chemin;
-tlv *tlvTemp;
 char* pathToDazibao;
 struct stat s;
 const gchar *sText;
 int num_msg=0;
-long posDep=0;
 long *posM=NULL;
 int isPad1_N=0, isComp_Dated=0, isDatedNew=0;
 GtkWidget *pWindow; GtkWidget *pWindow2;
@@ -98,75 +96,13 @@ tlv* newTlv(int type){
 }
 
 void freeTlv(tlv* tlv){
-printf("Entrée dans le free\n");
-    if(tlv->contenuImage!=NULL)
+        if(tlv->contenuImage!=NULL)
         free(tlv->contenuImage);
-printf("Contenu free, pathImage now...\n");
     if(tlv->pathImage!=NULL)
         free(tlv->pathImage);
-printf("PathImage free, textOrPath now...\n");
     if(tlv->textOrPath!=NULL)
         free(tlv->textOrPath);
-printf("free du tlv...\n");
     free(tlv);
-printf("Sortie du free\n");
-}
-
-tlv* tlvCopy(tlv* tlv1){
-    tlv* tlv2=NULL;
-    tlv2=newTlv(tlv1->type);
-    tlv2->nbTlv=tlv1->nbTlv;
-    if(tlv1->pathImage!=NULL){ // C'est un tlv Image (PNG ou JPEG)
-        int fd;
-        struct stat statBuf;
-        unsigned char* fmap=NULL;
-        if((tlv2->pathImage=malloc((strlen(tlv1->pathImage)+1)*sizeof(char)))==NULL){
-            perror("malloc");
-            exit(EXIT_FAILURE);
-        }
-        strcpy(tlv2->pathImage,tlv1->pathImage);
-        printf("avant le stat\n");
-        if(stat(tlv2->pathImage,&statBuf)==-1){
-            perror("stat");
-            exit(EXIT_FAILURE);
-        }
-        printf("après le stat\n");
-        tlv2->lenght=statBuf.st_size;
-        if((tlv2->contenuImage=malloc((statBuf.st_size+1)*sizeof(unsigned char)))==NULL){
-            perror("malloc");
-            exit(EXIT_FAILURE);
-        }
-        if((fd=open(tlv1->pathImage,O_RDONLY))==-1){
-            perror("open");
-            exit(EXIT_FAILURE);
-        }
-        fmap=mmap(NULL,statBuf.st_size,PROT_READ,MAP_PRIVATE,fd,0);
-        if(fmap==MAP_FAILED){
-            perror("mmap");
-            exit(EXIT_FAILURE);
-        }
-        memcpy(tlv2->contenuImage,fmap,statBuf.st_size);
-        munmap(fmap,statBuf.st_size);
-        if(close(fd)==-1){
-            perror("close");
-            exit(EXIT_FAILURE);
-        }
-    }
-    if(tlv1->textOrPath!=NULL){
-        if((tlv2->textOrPath=malloc((strlen(tlv1->textOrPath)+1)*sizeof(char)))==NULL){
-            perror("malloc");
-            exit(EXIT_FAILURE);
-        }
-        strcpy(tlv2->textOrPath,tlv1->textOrPath);
-    }
-    if(tlv1->tlvList!=NULL){
-        tlv2->tlvList=tlv1->tlvList;
-    }
-    if(tlv1->time!=0){
-        tlv2->time=tlv1->time;
-    }
-    freeTlv(tlv1);
-    return tlv2;
 }
 
 
@@ -500,6 +436,7 @@ int lectureAdibouz(FILE* nomBoudazi){
   fread(contenu,lenght,1,nomBoudazi);
   if (type==1) {
     isPad1_N=1;
+    printf("padN!!\n");
     free(contenu);
     return lenght;
   }else if (type==2) {
@@ -575,6 +512,11 @@ int lectureAdibouz(FILE* nomBoudazi){
     return lenght;
   }else{
     printf("TLV inconnue.\n");
+    buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
+    gtk_text_view_set_wrap_mode((GTK_TEXT_VIEW(pTextView)),GTK_WRAP_WORD);
+    gtk_text_view_set_justification((GTK_TEXT_VIEW(pTextView)),GTK_JUSTIFY_CENTER);
+    gtk_text_buffer_get_end_iter(buf,&end);
+    gtk_text_buffer_insert(buf, &end, g_locale_to_utf8("TLV de type inconnu.\n", -1, NULL, NULL, NULL), -1);
     free(contenu);
     return lenght;
   }
@@ -631,9 +573,7 @@ printf("le PATH : %s\n", path);
   num_msg = 0;
   unsigned long int tailleParcourueFichier=4,tailleLecture;
   stat(pathToDazibao,&s);
-  printf("sizeFile = %d\n",s.st_size);
   while(tailleParcourueFichier<s.st_size){
-  printf("tailleP = %ld\n",tailleParcourueFichier);
     if(isPad1_N!=1 && isComp_Dated!=1){
         i++;
         num_msg ++;
@@ -1093,7 +1033,6 @@ tlv* ajouter_png(int opt){
         perror("fstat");
         exit(EXIT_FAILURE);
     }
-    printf("tailleImage: %d\n",buf.st_size);
     tlv* tlvJpeg=NULL;
     tlvJpeg=newTlv(4);
     if((tlvJpeg->contenuImage=malloc((buf.st_size+1)*sizeof(unsigned char)))==NULL){
@@ -1193,7 +1132,6 @@ tlv* ajouter_jpeg(int opt){
         perror("fstat");
         exit(EXIT_FAILURE);
     }
-    printf("tailleImage: %d\n",buf.st_size);
     tlv* tlvJpeg=NULL;
     tlvJpeg=newTlv(4);
     if((tlvJpeg->contenuImage=malloc((buf.st_size+1)*sizeof(unsigned char)))==NULL){
@@ -1275,10 +1213,7 @@ tlv* ajouter_compound(int opt){
     const gchar* type;
     int len,i,valid;
     char c;
-    FILE* dazibao;
-    time_t now;
     tlv* tlvComp=NULL;
-    tlv* tlvDated=NULL;
 
 
     pBoite = gtk_dialog_new_with_buttons("Nombre de TLVs",
@@ -1388,7 +1323,6 @@ tlv* choisirTlv(){
     const gchar* type;
     int len,i,valid;
     char c;
-    time_t now;
     tlv* tlv=NULL;
 
 
@@ -1822,70 +1756,65 @@ void supprimer(){
   printf("suppression \n");
 }
 
- 
 
 void suppr(const char *dazibao, int num){
-  FILE *f=NULL;
-  struct stat sbuf;
-  unsigned char type=0,t=0;
-  if((f=fopen(dazibao,"r+b"))==NULL){
-    perror("fopen :");
-    exit(EXIT_FAILURE);
-  }
-  printf("pos1 : %ld\n",posM[num]);
-  fseek(f,posM[num],SEEK_SET);
-//  fread(&type,1,1,f);
-//  fseek(f,posM[num-1],SEEK_SET);
-  fwrite(&t,1,1,f);
-  if(num==num_msg){
-    if(truncate(dazibao,ftell(f)-1)==-1){
-        perror("truncate");
+    struct stat sbuf;
+    int lenght=0,fd=0;
+    if((fd=open(dazibao,O_RDWR))==-1){
+        perror("open :");
         exit(EXIT_FAILURE);
     }
-    fclose(f);
-  }else{
-    long end=0,pos=ftell(f);
-    printf("pos2 : %ld\n",ftell(f));
-    unsigned char l1=0,l2=0,l3=0;
-    fread(&l1,1,1,f);
-    fread(&l2,1,1,f);
-    fread(&l3,1,1,f);
-    lireLenght(l1,l2,l3);
-    fseek(f,0,SEEK_END);
-    int i=0;
-    for (i = 1; i <= num_msg; i++) {
-        printf("pos msg %d : %ld\n",i,posM[i]);
-    }
-    printf("TEST : %d %d\n",num, num_msg);
-    end=ftell(f);
-    fseek(f,posM[num+1],SEEK_SET);
-    printf("pos3 : %ld\n",ftell(f));
-    unsigned char *buf=NULL;
-    long tailleBuf=end-ftell(f);
-    if((buf=malloc((tailleBuf+1)*sizeof(unsigned char)))==NULL){
-        perror("malloc :");
+    if(stat(pathToDazibao,&sbuf)==-1){
+        perror("stat");
         exit(EXIT_FAILURE);
     }
-    fread(buf,tailleBuf,1,f);
-    fseek(f,pos,SEEK_SET);
-    fwrite(buf,tailleBuf,1,f);
-    if(stat(dazibao,&sbuf)==-1){
-        perror("stat :");
+    if(flock(fd,LOCK_EX)==-1){
+        perror("flock");
         exit(EXIT_FAILURE);
     }
-    off_t taille = ftell(f);
-    if(truncate(dazibao,taille)==-1){
-        perror("truncate");
+    unsigned char* fmap=mmap(NULL,sbuf.st_size,PROT_WRITE|PROT_READ,MAP_SHARED,fd,0);
+    if(fmap==MAP_FAILED){
+        perror("mmap");
         exit(EXIT_FAILURE);
     }
-    printf("fin suppr\n");
-    fclose(f);
-    free(buf);
-  }
+    printf("pos1 : %ld\nfmap : %d\n",posM[num],fmap[posM[num]]);
+    fmap[posM[num]]=1;
+    if(num==num_msg){
+        if(ftruncate(fd,posM[num])==-1){
+            perror("truncate");
+            exit(EXIT_FAILURE);
+        }
+        if(flock(fd,LOCK_UN)==-1){
+            perror("flock");
+            exit(EXIT_FAILURE);
+        }
+        if(munmap(fmap,sbuf.st_size)==-1){
+            perror("munmap");
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
+    }else{
+//      printf("pos2 : %ld\n",ftell(f));
+        lenght=lireLenght(fmap[posM[num]+1],fmap[posM[num]+2],fmap[posM[num]+3]);
+        printf("coucou %d  %d\n",lenght,fmap[0]);
+        memset(fmap+(posM[num]+4),0,lenght);
+        printf("coucou\n");
+        if(flock(fd,LOCK_UN)==-1){
+            perror("flock");
+            exit(EXIT_FAILURE);
+        }
+        printf("coucou\n");
+        if(munmap(fmap,sbuf.st_size)==-1){
+            perror("munmap");
+            exit(EXIT_FAILURE);
+        }
+        close(fd);
+        printf("fin suppr\n");
+    }
 }
 
 void compression(){
-    long pos=4,tailleParc=4;
+    long tailleParc=4;
     int i;
     unsigned char type=0, l1=0,l2=0,l3=0;
     unsigned int lenght=0;
