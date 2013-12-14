@@ -20,4 +20,4 @@ $(EXECUTABLE2): $(OBJECTS2)
 	$(CC) $< $(LDFLAGS) $(CFLAGS) -o $@
 
 clean :
-	rm -f *.o 
+	rm -f *.o client serveur
