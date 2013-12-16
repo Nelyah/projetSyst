@@ -62,7 +62,6 @@ int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
-    printf("tlvL= %d\n",tlv->lenght);
     if(fwrite(tlv->contenuImage,tlv->lenght,1,dazibao)==0){
         perror("fwrite");
         exit(EXIT_FAILURE);
@@ -143,7 +142,6 @@ tlv* ajouter_jpeg(int opt){
     }
     strcpy(tlvJpeg->pathImage,filename);
 
-    printf("path : %s\n",tlvJpeg->pathImage);
     if(opt==0){
         num_msg++;
         char* num_msg2=NULL;
@@ -152,7 +150,6 @@ tlv* ajouter_jpeg(int opt){
             exit(EXIT_FAILURE);
         }
         sprintf(num_msg2,"%d",num_msg);
-        printf("num msg%d\n",num_msg);
         GtkTextIter end;
         GtkTextBuffer *buf2;
         buf2 = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
@@ -177,7 +174,6 @@ tlv* ajouter_jpeg(int opt){
         fclose(dazibao);
         return NULL;
     }else{
-        printf("test de retour ?\n");
         return tlvJpeg;
     }
     return NULL;

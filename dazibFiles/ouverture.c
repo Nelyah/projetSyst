@@ -21,6 +21,7 @@ int ouverture(const char *path){
     FILE*dazibao=fopen(path,"rb");    
     if (dazibao==NULL) {
         printf("Problème à l'ouverture du fichier.\n");
+        exit(EXIT_FAILURE);
     }
     int err;
     if((err=flock(fileno(dazibao),LOCK_SH))!=0) {
@@ -28,13 +29,13 @@ int ouverture(const char *path){
     }
     if((err=stat(path,&s))!=0) {
         perror("stat : ");
-	exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     unsigned char magic,version;
     fread(&magic,1,1,dazibao);
     if (magic!=53) {
         printf("Le numéro magique n'est pas valide\n");
-	return 10;
+        return 10;
     }
     fread(&version,1,1,dazibao);
     if (version!=0) {
@@ -44,43 +45,42 @@ int ouverture(const char *path){
     short int mbz;
     fread(&mbz,2,1,dazibao);
     if((err=flock(fileno(dazibao),LOCK_UN))!=0) {
-      perror("flock : ");
+        perror("flock : ");
+        exit(EXIT_FAILURE);
     }
     return 0;
 }
 
 void ouverture2(const char *path){
-printf("le PATH : %s\n", path);
-  FILE*f=fopen(pathToDazibao,"rb");
-  if (f==NULL) {
-    printf("Problème à l'ouverture du fichier.\n");
-  }
-  int err;
-  if((err=flock(fileno(f),LOCK_SH))!=0) {
-    perror("flock : ");
-  }
-  fseek(f,4,SEEK_SET);
-  unsigned int i=0;
-  num_msg = 0;
-  unsigned long int tailleParcourueFichier=4,tailleLecture;
-  stat(pathToDazibao,&s);
-  while(tailleParcourueFichier<s.st_size){
-    if(isPad1_N!=1 && isComp_Dated!=1){
-        i++;
-        num_msg ++;
-        printf("Message n°%d\n",i);
-        
+    FILE*f=fopen(pathToDazibao,"rb");
+    if (f==NULL) {
+        printf("Problème à l'ouverture du fichier.\n");
+        exit(EXIT_FAILURE);
     }
-    if((tailleLecture=lectureDazibao(f))!=-1) {
-      tailleParcourueFichier=tailleParcourueFichier+4+tailleLecture;
-    }else{
-      tailleParcourueFichier++;
+    int err;
+    if((err=flock(fileno(f),LOCK_SH))!=0) {
+        perror("flock : ");
+        exit(EXIT_FAILURE);
     }
+    fseek(f,4,SEEK_SET);
+    unsigned int i=0;
+    unsigned long int tailleParcourueFichier=4,tailleLecture;
+    num_msg = 0;
+    stat(pathToDazibao,&s);
+    while(tailleParcourueFichier<s.st_size){
+        if(isPad1_N!=1 && isComp_Dated!=1){
+            i++;
+            num_msg ++;
+        }
+        if((tailleLecture=lectureDazibao(f))!=-1) {
+            tailleParcourueFichier=tailleParcourueFichier+4+tailleLecture;
+        }else{
+            tailleParcourueFichier++;
+        }
   }
-
-
   if((err=flock(fileno(f),LOCK_UN))!=0) {
     perror("flock : ");
+    exit(EXIT_FAILURE);
   }
   fclose(f);
 }

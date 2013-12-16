@@ -37,7 +37,6 @@ void suppr(const char *dazibao, int num){
         perror("mmap");
         exit(EXIT_FAILURE);
     }
-    printf("pos1 : %ld\nfmap : %d\n",posM[num],fmap[posM[num]]);
     fmap[posM[num]]=1;
     if(num==num_msg){
         if(ftruncate(fd,posM[num])==-1){
@@ -45,23 +44,18 @@ void suppr(const char *dazibao, int num){
             exit(EXIT_FAILURE);
         }
     }else{
-//      printf("pos2 : %ld\n",ftell(f));
         lenght=lireLenght(fmap[posM[num]+1],fmap[posM[num]+2],fmap[posM[num]+3]);
-        printf("coucou %d  %d\n",lenght,fmap[0]);
         memset(fmap+(posM[num]+4),0,lenght);
-        printf("coucou\n");
     }
     if(flock(fd,LOCK_UN)==-1){
         perror("flock");
         exit(EXIT_FAILURE);
     }
-    printf("coucou\n");
     if(munmap(fmap,sbuf.st_size)==-1){
         perror("munmap");
         exit(EXIT_FAILURE);
     }
     close(fd);
-    printf("fin suppr\n");
 }
 
 void supprimer(){
@@ -99,7 +93,6 @@ void supprimer(){
             }
       
             if(valid == 0){
-                printf("La chaine n'est pas un nombre entier.\n");
                 dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous devez saisir un nombre entier!");
                 gtk_dialog_run(GTK_DIALOG(dialog));
@@ -108,13 +101,11 @@ void supprimer(){
             }else{
                 int n=atol(sNom);
                 if(n > 0 && n <= num_msg){
-                    printf("n=%d\n", n);
                     suppr(pathToDazibao, n);
                     gtk_widget_destroy(pWindow2);
                     gtk_widget_destroy(pBoite);	
                     lancer_dazibao();
                 }else{
-                    printf("Vous devez rentrer un nombre compris dans les numeros de messages");
                     dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
                         GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous devez rentrer un nombre compris dans les numeros de messages!");
                     gtk_dialog_run(GTK_DIALOG(dialog));
@@ -127,7 +118,6 @@ void supprimer(){
         case GTK_RESPONSE_CANCEL:
         case GTK_RESPONSE_NONE:
         default:
-            printf("Vous n'avez rien saisi !");
             dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
 					  GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous n'avez rien saisi!");
             gtk_dialog_run(GTK_DIALOG(dialog));
@@ -135,6 +125,4 @@ void supprimer(){
             gtk_widget_destroy(pBoite);
             break;
     }
- 
-  printf("suppression \n");
 }

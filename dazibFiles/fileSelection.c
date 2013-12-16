@@ -21,14 +21,12 @@ void verifier_chemin(GtkWidget *widget, GtkWidget *file_selection){
         dialog = gtk_message_dialog_new(GTK_WINDOW(file_selection),GTK_DIALOG_MODAL,
 				    GTK_MESSAGE_INFO,GTK_BUTTONS_OK,"Vous avez choisi :\n%s", chemin);
 
-        printf("Dazibao choisi : %s \n ", chemin);
         if((pathToDazibao=malloc((strlen(chemin)+1)*sizeof(char)))==NULL){
             perror("malloc");
             exit(EXIT_FAILURE);
         }
         strcpy(pathToDazibao,chemin);
    
-  printf("coucou\n");
         gtk_dialog_run(GTK_DIALOG(dialog));
         gtk_widget_destroy(dialog);
         gtk_widget_destroy(file_selection);

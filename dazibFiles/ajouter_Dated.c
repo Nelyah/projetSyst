@@ -13,7 +13,6 @@
 
 
 int ajouterMessageDated(FILE *dazibao,tlv* tlv,int hasLock){
-printf("coucou\n");
     int fd=fileno(dazibao);
     GtkTextIter end;
     GtkTextBuffer *buf;
@@ -32,7 +31,6 @@ printf("coucou\n");
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
-printf("coucou\n");
     unsigned int lenght=tlv->lenght;
     unsigned char l1=0,l2=0,l3=0;
     l1=ecrireLenght1(lenght);
@@ -76,7 +74,6 @@ printf("coucou\n");
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
-printf("coucou\n");
     if((err=fwrite(&t2,1,1,dazibao))==0) {
         perror("fwrite :");
         exit(EXIT_FAILURE);
@@ -89,7 +86,6 @@ printf("coucou\n");
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
-printf("coucou\n");
     if(tlv->tlvList[0]->type==2) {
         gtk_text_buffer_insert(buf, &end, g_locale_to_utf8(tlv->tlvList[0]->textOrPath, -1, NULL, NULL, NULL), -1);
         gtk_text_buffer_insert(buf, &end, g_locale_to_utf8("\n", -1, NULL, NULL, NULL), -1);
@@ -98,7 +94,7 @@ printf("coucou\n");
         ajouterMessagePng(dazibao,tlv->tlvList[0],1);
     }else if(tlv->tlvList[0]->type==4){
         ajouterMessageJpeg(dazibao,tlv->tlvList[0],1);
-    }else if(tlv->tlvList[0]->type==5){ // Ne pas faire pour l'instant
+    }else if(tlv->tlvList[0]->type==5){ 
         ajouterMessageCompound(dazibao,tlv->tlvList[0],1);
     }else if(tlv->tlvList[0]->type==6){
         ajouterMessageDated(dazibao,tlv->tlvList[0],1);
@@ -109,10 +105,7 @@ printf("coucou\n");
             exit(EXIT_FAILURE);
         }
     }
-printf("coucou\n");
-printf("coucoui\n");
     freeTlv(tlv);
-printf("coucouf\n");
     return 0;
 }
 
@@ -154,7 +147,6 @@ tlv* ajouter_dated(int opt){
             }
       
             if(valid == 0){
-                printf("La chaine n'est pas un nombre entier.\n");
                 dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous devez saisir un nombre entier!");
      
@@ -164,7 +156,6 @@ tlv* ajouter_dated(int opt){
             }else{
                 int n=atol(type);
                 if(n > 1 && n <= TLV_MAX){
-                    printf("type choisi : %d\n", n);
                     tlv* tlv=NULL;
                     switch (n) {
                         case 2 :
@@ -178,7 +169,6 @@ tlv* ajouter_dated(int opt){
                             tlvDated->time=now;
                             tlv=ajouter_texte(2);
                             if(tlv==NULL){
-                            printf("le texte est un NULL ! \n");
                                 free(tlvDated);
                                 gtk_widget_destroy(pBoite);
                                 return NULL;
@@ -258,7 +248,6 @@ tlv* ajouter_dated(int opt){
                     gtk_widget_destroy(pBoite);	
 
                 }else {
-	                printf("Vous devez rentrer un nombre compris dans les types de TLV");
 	                dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous devez rentrer un nombre compris dans les types de TLV");
      
@@ -273,7 +262,6 @@ tlv* ajouter_dated(int opt){
         case GTK_RESPONSE_CANCEL:
         case GTK_RESPONSE_NONE:
         default:
-            printf("Vous n'avez rien saisi !");
             dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
 					  GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous n'avez rien saisi!");
      
@@ -317,6 +305,5 @@ tlv* ajouter_dated(int opt){
         return tlvDated;
     }
 
-    printf("ajout dated\n");
     return NULL;
 }

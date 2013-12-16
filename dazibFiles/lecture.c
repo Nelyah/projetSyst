@@ -31,27 +31,22 @@ int lectureDazibao(FILE* dazibao){
 
   num_msg2=malloc(10*sizeof(unsigned char));
   sprintf(num_msg2, "%d", num_msg);
-  printf("%s\n",num_msg2);
   
   fread(&type,1,1,dazibao);
   buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
   gtk_text_view_set_wrap_mode((GTK_TEXT_VIEW(pTextView)),GTK_WRAP_WORD);
   gtk_text_view_set_justification((GTK_TEXT_VIEW(pTextView)),GTK_JUSTIFY_CENTER);
   gtk_text_buffer_get_end_iter(buf,&end);
-  printf("need to know : type =%d, ispad1_n=%d isComp_D=%d\n",type,isPad1_N,isComp_Dated);
   if((type!=0 && type!=1) && isComp_Dated==0){
-  printf("------------------------------------------------------\n");
     gtk_text_buffer_insert(buf, &end, num_msg2, -1);
     gtk_text_buffer_insert(buf, &end, "------------------------------------------------------------------------------------------------------------------------------------\n", -1);
   }
   free(num_msg2);
   isPad1_N=0;
   if (type==0) {
-  printf("pouet\n");
     isPad1_N=1;
     return -1;
   }
-  printf("Type : %d\n",type);
   if(isPad1_N==0 && isComp_Dated==0){
     posM[num_msg]=ftell(dazibao)-1;
   }
@@ -64,27 +59,20 @@ int lectureDazibao(FILE* dazibao){
     exit(EXIT_FAILURE);
   }
   if (type==5) {
-  printf("C'est un compound\n");
     isComp_Dated=1;
     lectureCompound(dazibao,lenght);
     free(contenu);
     isComp_Dated=0;
     return lenght;
   }else if (type==6) {
-  printf("C'est un dated\n");
     time_t secondes=0;
     unsigned char l1,l2,l3,l4;
-//    secondes=time(NULL);
-//    ctime(&secondes);
     isComp_Dated=1;
-//    fread(&secondes,4,1,dazibao);
     fread(&l1,1,1,dazibao);
     fread(&l2,1,1,dazibao);
     fread(&l3,1,1,dazibao);
     fread(&l4,1,1,dazibao);
     secondes=256*256*256*l1+256*256*l2+256*l3+l4;
-    printf("secondes : %ld\n",secondes);
-    printf("%s",ctime(&secondes));
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
     gtk_text_view_set_wrap_mode((GTK_TEXT_VIEW(pTextView)),GTK_WRAP_WORD);
     gtk_text_view_set_justification((GTK_TEXT_VIEW(pTextView)),GTK_JUSTIFY_CENTER);
@@ -98,13 +86,11 @@ int lectureDazibao(FILE* dazibao){
   fread(contenu,lenght,1,dazibao);
   if (type==1) {
     isPad1_N=1;
-    printf("C'est un padN\n");
     free(contenu);
     return lenght;
   }else if (type==2) {
     contenu[lenght]='\n';
     contenu[lenght+1]='\0';
-    printf("%s\n",contenu);
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
     gtk_text_view_set_wrap_mode((GTK_TEXT_VIEW(pTextView)),GTK_WRAP_WORD);
     gtk_text_view_set_justification((GTK_TEXT_VIEW(pTextView)),GTK_JUSTIFY_CENTER);
@@ -139,7 +125,6 @@ int lectureDazibao(FILE* dazibao){
     gtk_text_buffer_insert_pixbuf(buf,&end, pix);
     gtk_text_buffer_insert(buf, &end, "\n", -1);
     unlink(nomImage);
-    printf("C'est un PNG !!!\n");
     free(contenu);
     return lenght;
   }else if (type==4) {
@@ -169,11 +154,9 @@ int lectureDazibao(FILE* dazibao){
     gtk_text_buffer_insert_pixbuf(buf,&end, pix);
     gtk_text_buffer_insert(buf, &end, "\n", -1);
     unlink(nomImage);
-    printf("C'est un JPEG !!!\n");
     free(contenu);
     return lenght;
   }else{
-    printf("TLV inconnue.\n");
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
     gtk_text_view_set_wrap_mode((GTK_TEXT_VIEW(pTextView)),GTK_WRAP_WORD);
     gtk_text_view_set_justification((GTK_TEXT_VIEW(pTextView)),GTK_JUSTIFY_CENTER);

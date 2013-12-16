@@ -52,7 +52,6 @@ int ajouterMessageCompound(FILE* dazibao,tlv* tlv, int hasLock){
         exit(EXIT_FAILURE);
     }
     for (i = 0; i < tlv->nbTlv; i++) {
-        printf("Passage %d :\n",i);
         if(tlv->tlvList[i]->type==2) {
             gtk_text_buffer_insert(buf, &end, g_locale_to_utf8(tlv->tlvList[0]->textOrPath, -1, NULL, NULL, NULL), -1);
             gtk_text_buffer_insert(buf, &end, g_locale_to_utf8("\n", -1, NULL, NULL, NULL), -1);
@@ -73,7 +72,6 @@ int ajouterMessageCompound(FILE* dazibao,tlv* tlv, int hasLock){
             exit(EXIT_FAILURE);
         }
     }
-    printf("pouet ici ?\n");
     freeTlv(tlv);
     return 0;
 }
@@ -83,7 +81,6 @@ void ajouter_compoundN(){
 }
 
 tlv* ajouter_compound(int opt){
-    printf("ajout compound \n");
     GtkWidget* pBoite;
     GtkWidget* pEntry;
     const gchar* type;
@@ -114,7 +111,6 @@ tlv* ajouter_compound(int opt){
             }
       
             if(valid == 0){
-                printf("La chaine n'est pas un nombre entier.\n");
                 dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
                     GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous devez saisir un nombre entier!");
      
@@ -139,7 +135,6 @@ tlv* ajouter_compound(int opt){
                         return NULL;
                     }
                     tlvComp->lenght=tlvComp->lenght+tlvComp->tlvList[i]->lenght+4;
-                    printf("choix num : %d\n",i+1);
                 }
             }
             if(opt==0){
@@ -175,7 +170,6 @@ tlv* ajouter_compound(int opt){
                 return NULL;
             }else{
 	            gtk_widget_destroy(pBoite);
-                    printf("après choix\n");
                 return(tlvComp);
             }
 	        gtk_widget_destroy(pBoite);
@@ -183,7 +177,6 @@ tlv* ajouter_compound(int opt){
         case GTK_RESPONSE_CANCEL:
         case GTK_RESPONSE_NONE:
         default:
-            printf("Vous n'avez rien saisi !");
             dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
 					  GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous n'avez rien saisi!");
      
@@ -227,7 +220,6 @@ tlv* choisirTlv(){
             }
       
             if(valid == 0){
-	            printf("La chaine n'est pas un nombre entier.\n");
 	            dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous devez saisir un nombre entier!");
      
@@ -237,7 +229,6 @@ tlv* choisirTlv(){
             }else{
 	            int n=atol(type);
 	            if(n > 1 && n <= TLV_MAX){
-	                printf("type choisi : %d\n", n);
                     gtk_widget_destroy(pBoite);	
                     switch (n) {
                         case 2 :
@@ -263,7 +254,6 @@ tlv* choisirTlv(){
                     }
 
                 }else {
-	                printf("Vous devez rentrer un nombre compris dans les types de TLV");
 	                dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous devez rentrer un nombre compris dans les types de TLV");
      
@@ -278,7 +268,6 @@ tlv* choisirTlv(){
         case GTK_RESPONSE_CANCEL:
         case GTK_RESPONSE_NONE:
         default:
-            printf("Vous n'avez rien saisi !");
             dialog = gtk_message_dialog_new(GTK_WINDOW(pBoite),GTK_DIALOG_MODAL,
 					  GTK_MESSAGE_ERROR,GTK_BUTTONS_OK,"Vous n'avez rien saisi!");
      

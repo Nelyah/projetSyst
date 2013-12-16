@@ -54,13 +54,7 @@ tlv* newTlv(int type){
 }
 
 void freeTlv(tlv* tlv){
-    int i;
-    for(i=0;i<tlv->nbTlv;i++){
-        if(tlv->tlvList[i]!=NULL){
-            free(tlv->tlvList[i]);
-        }
-    }
-    if(tlv->tlvList==NULL)
+    if(tlv->tlvList!=NULL)
         free(tlv->tlvList);
     if(tlv->contenuImage!=NULL)
         free(tlv->contenuImage);

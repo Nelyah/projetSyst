@@ -93,6 +93,5 @@ void compression(){
         exit(EXIT_FAILURE);
     }
     fclose(f);
-    printf("Fin compression\n");
 
 }

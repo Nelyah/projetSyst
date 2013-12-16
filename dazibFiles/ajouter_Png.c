@@ -63,7 +63,6 @@ int ajouterMessagePng(FILE* dazibao,tlv* tlv,int hasLock){
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
-    printf("tlvL= %d\n",tlv->lenght);
     if(fwrite(tlv->contenuImage,tlv->lenght,1,dazibao)==0){
         perror("fwrite");
         exit(EXIT_FAILURE);
@@ -87,7 +86,6 @@ void ajouter_pngN(){
 }
 
 tlv* ajouter_png(int opt){
-    printf("ajout png \n");
     char* filename=NULL;
     GtkWidget *selection;
     selection = gtk_file_chooser_dialog_new( g_locale_to_utf8( "Sélectionnez un fichier", -1, NULL, NULL, NULL),
@@ -146,7 +144,6 @@ tlv* ajouter_png(int opt){
     }
     strcpy(tlvPng->pathImage,filename);
 
-    printf("path : %s\n",tlvPng->pathImage);
     if(opt==0){
         num_msg++;
         char* num_msg2=NULL;
@@ -155,7 +152,6 @@ tlv* ajouter_png(int opt){
             exit(EXIT_FAILURE);
         }
         sprintf(num_msg2,"%d",num_msg);
-        printf("num msg%d\n",num_msg);
         GtkTextIter end;
         GtkTextBuffer *buf2;
         buf2 = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));

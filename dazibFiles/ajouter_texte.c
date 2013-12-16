@@ -10,7 +10,6 @@
 
 int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
     int err;
-    printf("filed %d\n",fileno(dazibao));
     if (hasLock!=1) {
         if((err=flock(fileno(dazibao),LOCK_EX))!=0){
             perror("flock : ");
@@ -30,7 +29,6 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
     l1=ecrireLenght1(lenght);
     l2=ecrireLenght2(lenght,l1);
     l3=ecrireLenght3(lenght,l1,l2);
-    printf("lenght:%d, tlvLen=%d l1=%d l2=%d l3=%d\n",lenght,tlv->lenght,l1,l2,l3);
     if ((err=fwrite(&l1,1,1,dazibao))==0) {
         perror("fwrite :");
         exit(EXIT_FAILURE);
@@ -43,12 +41,10 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
-    printf("texte : %s\n",tlv->textOrPath);
     if((err=fwrite(tlv->textOrPath,tlv->lenght,1,dazibao))==0) {
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
-    printf("err=%d\n%d\n",err,tlv->lenght);
     if(hasLock!=1) {
         if((err=flock(fileno(dazibao),LOCK_UN))!=0){
             perror("flock : ");
@@ -56,7 +52,6 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
         }
     }
     freeTlv(tlv);
-    printf("pouet fin txt\n");
     return 0;
 }
 
@@ -87,7 +82,6 @@ tlv* ajouter_texte(int opt){
     switch (gtk_dialog_run(GTK_DIALOG(pBoite))){
         case GTK_RESPONSE_OK:
             sNom = gtk_entry_get_text(GTK_ENTRY(pEntry));
-            printf("%s\n",sNom); 
             tlv* new_msg=NULL;
             new_msg=newTlv(2);
             if((new_msg->textOrPath=malloc((strlen(sNom)+1)*sizeof(char)))==NULL){
@@ -139,11 +133,9 @@ tlv* ajouter_texte(int opt){
             gtk_widget_destroy(pBoite);
             break;
         default:
-            printf("Vous n'avez rien saisi !");
             gtk_widget_destroy(pEntry);	
             gtk_widget_destroy(pBoite);
             break;
     }
-    printf("ajout texte \n");
     return NULL;
 }
