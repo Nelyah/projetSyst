@@ -10,6 +10,10 @@
 
 
 int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
+/* Cette fonction permet d'écrire le tlv donné en argument dans le fichier dazibao.
+ * Les arguments sont un FILE*, un pointeur vers le tlv rempli, et un flag
+ * pour savoir si il y a eu un lock sur le fichier
+*/
     if (hasLock!=1) {
         if(flock(fileno(dazibao),LOCK_EX)!=0){
             perror("flock : ");
@@ -41,10 +45,12 @@ int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
         printf("Erreur : La taille de l'image est trop grande \n");
         exit(EXIT_FAILURE);
     }
+    // On écrit le type du tlv
     if (fwrite(&tlv->type,1,1,dazibao)==0) {
         perror("fwrite ");
         exit(EXIT_FAILURE);
     }
+    // On écrit la longueur du tlv
     unsigned int lenght=tlv->lenght; 
     unsigned char l1=0,l2=0,l3=0;
     l1=ecrireLenght1(lenght);
@@ -62,10 +68,12 @@ int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
+    // On écrit le contenu de l'image qui était stocké dans un unsigned char*
     if(fwrite(tlv->contenuImage,tlv->lenght,1,dazibao)==0){
         perror("fwrite");
         exit(EXIT_FAILURE);
     }
+    // Affichage sur l'interface graphique
     gtk_text_buffer_insert_pixbuf(buf,&end, pix);
     gtk_text_buffer_insert(buf, &end, "\n", -1);
     if (hasLock!=1) {
@@ -80,10 +88,21 @@ int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
 
 
 void ajouter_jpegN(){
+/* Cette fonction est appelée uniquement par l'interface graphique.
+ * Elle va appeler la fonction ajouter_jpeg(int opt) en spécifiant qu'elle
+ * n'aura pas de parent
+*/
     ajouter_jpeg(0);
 }
 
 tlv* ajouter_jpeg(int opt){
+/* Cette fonction a comme but de remplir un tlv jpeg et de le renvoyer si
+ * la fonction a un parent, ou d'appeler directement la fonciton pour l'écrire sur
+ * le fichier dazibao sinon.
+ * Elle renvoie NULL si il y a eu une erreur ou que l'utilisateur annule.
+*/
+
+// On récupère le chemin vers l'image que l'on veut afficher
     char* filename=NULL;
     GtkWidget *selection;
     selection = gtk_file_chooser_dialog_new( g_locale_to_utf8( "Sélectionnez un fichier", -1, NULL, NULL, NULL),
@@ -104,6 +123,7 @@ tlv* ajouter_jpeg(int opt){
         gtk_dialog_run(GTK_DIALOG(dialog));
         gtk_widget_destroy(dialog);
     gtk_widget_destroy(selection);
+    // On ouvre le fichier de l'image
     int fd;
     if((fd=open(filename,O_RDONLY))==-1){
         perror("open");
@@ -121,12 +141,14 @@ tlv* ajouter_jpeg(int opt){
         exit(EXIT_FAILURE);
     }
     tlvJpeg->lenght=buf.st_size;
+    // On utilise mmap pour faire une map_private de l'image
     unsigned char* fmap=mmap(NULL,buf.st_size,PROT_READ,MAP_PRIVATE,fd,0);
     if(fmap==MAP_FAILED){
         perror("mmap");
         exit(EXIT_FAILURE);
     }
 
+    // On utilise memcpy pour copier notre map_private dans notre pointeur contenuImage
     memcpy(tlvJpeg->contenuImage,fmap,buf.st_size);
     if(munmap(fmap,buf.st_size)==-1){
         perror("munmap");
@@ -136,13 +158,14 @@ tlv* ajouter_jpeg(int opt){
         perror("close");
         exit(EXIT_FAILURE);
     }
+    // On enregistre le path vers l'image
     if((tlvJpeg->pathImage=malloc((strlen(filename)+1)*sizeof(char)))==NULL){
         perror("malloc");
         exit(EXIT_FAILURE);
     }
     strcpy(tlvJpeg->pathImage,filename);
 
-    if(opt==0){
+    if(opt==0){ // Si la fonction n'a pas de parents
         num_msg++;
         char* num_msg2=NULL;
         if((num_msg2=malloc(10*sizeof(char)))==NULL){

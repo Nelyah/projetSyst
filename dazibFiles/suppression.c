@@ -18,6 +18,13 @@
 
 
 void suppr(const char *dazibao, int num){
+/* Cette fonction a pour but de supprimer le tlv indiqué par num.
+ * Elle va mapper le fichier dazibao, puis va remplacer le type du
+ * à supprimer par 1 et va initialiser à 0 ce qu'il y avait dans 
+ * le contenu de longueur lenght.
+ * note : Si le tlv est le dernier du dazibao, le fichier est simplement
+ * tronqué juste avant ce message.
+*/
     struct stat sbuf;
     int lenght=0,fd=0;
     if((fd=open(pathToDazibao,O_RDWR))==-1){
@@ -59,6 +66,11 @@ void suppr(const char *dazibao, int num){
 }
 
 void supprimer(){
+/* Cette fonction supprimée est celle appelée par l'interface graphique
+ * lorsqu'on clique sur le bouton. Elle va permettre à l'utilisateur de
+ * choisir le numéro du tlv qu'il souhaite supprimer, et appeler la 
+ * fonction suppr en conséquence.
+*/
  
     GtkWidget* pBoite;
     GtkWidget* pEntry;
@@ -85,6 +97,7 @@ void supprimer(){
             sNom = gtk_entry_get_text(GTK_ENTRY(pEntry));
             len = strlen(sNom);
       
+            // On vérifie qu'il s'agit bien d'un chiffre
             for(i = 0; i < len; i++){
                 if ((sNom[i]< '0') || (sNom[i]> '9')){
                     valid = 0;

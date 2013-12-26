@@ -9,6 +9,12 @@
 
 
 int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
+/* Cette fonction va permettre d'écrire dans le fichier dazibao
+ * Elle prend en argument un FILE* sur le fichier, un pointeur sur tlv
+ * qui est normalement rempli pour un tlv texte, et un flag qui permet de 
+ * savoir si cette fonction doit lock le fichier ou non (si elle est appelée 
+ * par un parent ou non).
+*/
     int err;
     if (hasLock!=1) {
         if((err=flock(fileno(dazibao),LOCK_EX))!=0){
@@ -20,10 +26,12 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
         printf("Erreur : Le message est trop long \n");
         exit(EXIT_FAILURE);
     }
+    // On écrit le type du tlv
     if((err=fwrite(&tlv->type,1,1,dazibao))==0) {
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
+    // On écrit sa taille
     unsigned int lenght=tlv->lenght; 
     unsigned char l1=0,l2=0,l3=0;
     l1=ecrireLenght1(lenght);
@@ -41,6 +49,7 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
         perror("fwrite :");
         exit(EXIT_FAILURE);
     }
+    // On écrit le contenu du texte
     if((err=fwrite(tlv->textOrPath,tlv->lenght,1,dazibao))==0) {
         perror("fwrite :");
         exit(EXIT_FAILURE);
@@ -57,17 +66,25 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
 
 
 void ajouter_texteN(){
+/* Cette fonction est appelée par l'interface graphique uniquement
+ * Elle va appeler ajouter_texte(int opt) avec l'option 0 qui signifiera
+ * que le tlv en train d'être construit n'a pas de parent (il n'aura pas besoin
+ * de renvoyer son pointeur, et il appelera directement la fonction pour écrire
+ * son tlv dans le fichier dazibao).
+*/
     ajouter_texte(0);
 }
 
 tlv* ajouter_texte(int opt){
+/* Cette fonction va permettre de remplir le tlv texte 
+ * Elle va renvoyer un pointeur sur le tlv rempli une fois qu'elle a terminé,
+ * ou un pointeur vers NULL, si l'utilisateur annule, ou si quelque chose 
+ * s'est mal passé, où encore si la fonction n'a rien à renvoyer (pas de parent).
+*/
     GtkWidget* pBoite;
     GtkWidget* pEntry;
     const gchar* sNom;
  
-  /* Création de la boite de dialogue */
-  /* 1 bouton Valider */
-  /* 1 bouton Annuler */
     pBoite = gtk_dialog_new_with_buttons("Ajout",
 				       GTK_WINDOW(pWindow2),
 				       GTK_DIALOG_MODAL,
@@ -75,12 +92,14 @@ tlv* ajouter_texte(int opt){
 				       GTK_STOCK_CANCEL,GTK_RESPONSE_CANCEL,
 				       NULL);
  
+ // On rentre le texte voulu
     pEntry = gtk_entry_new();
     gtk_entry_set_text(GTK_ENTRY(pEntry), "Saisissez votre texte");
     gtk_box_pack_start(GTK_BOX(GTK_DIALOG(pBoite)->vbox), pEntry, TRUE, FALSE, 0);
     gtk_widget_show_all(GTK_DIALOG(pBoite)->vbox);
     switch (gtk_dialog_run(GTK_DIALOG(pBoite))){
         case GTK_RESPONSE_OK:
+        // On initialise le tlv texte et on le rempli
             sNom = gtk_entry_get_text(GTK_ENTRY(pEntry));
             tlv* new_msg=NULL;
             new_msg=newTlv(2);
@@ -90,6 +109,8 @@ tlv* ajouter_texte(int opt){
             }
             strcpy(new_msg->textOrPath,(char*)sNom);
             new_msg->lenght=strlen(new_msg->textOrPath);
+
+            // si la fonction n'a pas de parent
             if(opt==0){
                 num_msg++;
                 struct stat statBuf;

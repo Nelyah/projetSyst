@@ -29,13 +29,20 @@ GtkWidget *dialog;
 
 
 void interruptHandler(int sig){
-    gtk_main_quit();
+/* Cette fonction catch les signals SIGINT et SIGTERM
+ * Elle permet de terminer proprement le programme.
+*/ 
+    gtk_main_quit(); 
 }
 
 
 
 
 int main(int argc, char **argv){
+/* Fonction main, point d'entrée du programme
+ * l'interface graphique est initialisée, ainsi que 
+ * certaines valeurs.
+*/ 
     GtkWidget *pMenuBar;
     GtkWidget *pMenu;
     GtkWidget *pMenuItem;

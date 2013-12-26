@@ -17,6 +17,10 @@
 
 
 int ouverture(const char *path){
+/* Cette fonction est chargée de vérifier si le fichier 
+ * spécifié par path est bien un dazibao. si c'est un 
+ * dazibao, elle renvoie 0, et 10 sinon.
+*/
   
     FILE*dazibao=fopen(path,"rb");    
     if (dazibao==NULL) {
@@ -31,6 +35,7 @@ int ouverture(const char *path){
         perror("stat : ");
         exit(EXIT_FAILURE);
     }
+    // Lecture du numero magique et de la version
     unsigned char magic,version;
     fread(&magic,1,1,dazibao);
     if (magic!=53) {
@@ -42,6 +47,7 @@ int ouverture(const char *path){
       printf("Le numéro de la version n'est pas valide\n");
       return 10;
     }
+    // Lecture de mbz
     short int mbz;
     fread(&mbz,2,1,dazibao);
     if((err=flock(fileno(dazibao),LOCK_UN))!=0) {
@@ -52,6 +58,11 @@ int ouverture(const char *path){
 }
 
 void ouverture2(const char *path){
+/* Cette fonction va se charger de remplir la fenêtre principale avec
+ * le contenu du fichier dazibao. Pour cela, la fonction va faire appel
+ * à la fonction "lectureDazibao" tant que la taille totale de ce qu'on a 
+ * lu ne dépasse pas la taille du dazibao.
+*/
     FILE*f=fopen(pathToDazibao,"rb");
     if (f==NULL) {
         printf("Problème à l'ouverture du fichier.\n");
@@ -88,90 +99,116 @@ void ouverture2(const char *path){
 
 
 void lancer_dazibao (){
-  GtkWidget *pMenuBar2;
-  GtkWidget *pMenu2;
-  GtkWidget *pMenuItem2;
-  GtkWidget *pImage2;
-  GdkColor color;
+/* Cette fonction est utilisée pour initialiser les fonctions de la fenêtre principale 
+ * lorsqu'on consulte le dazibao.
+ * C'est elle qui va permettre d'associer chaque bouton de la fenêtre à une fonction spécifique.
+*/
+    GtkWidget *pMenuBar2;
+    GtkWidget *pMenu2;
+    GtkWidget *pMenuItem2;
+    GtkWidget *pImage2;
+    GdkColor color;
 
-  pWindow2 = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  gtk_window_set_position(GTK_WINDOW(pWindow2), GTK_WIN_POS_CENTER);
-  gtk_window_maximize(GTK_WINDOW(pWindow2));
-//  gtk_window_set_default_size(GTK_WINDOW(pWindow2), 810, 400);
-  gtk_window_set_title(GTK_WINDOW(pWindow2), chemin);
-  g_signal_connect(G_OBJECT(pWindow2),"destroy",G_CALLBACK(gtk_main_quit), NULL);
-  color.pixel = 32;
-  color.red = 1235;
-  color.green = 155;
-  color.blue = 0;
-  gtk_widget_modify_bg (pWindow2, GTK_STATE_NORMAL, &color);
+// La taille de la fenêtre est en plein écran
+    pWindow2 = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_position(GTK_WINDOW(pWindow2), GTK_WIN_POS_CENTER);
+    gtk_window_maximize(GTK_WINDOW(pWindow2));
+    gtk_window_set_title(GTK_WINDOW(pWindow2), chemin);
+    g_signal_connect(G_OBJECT(pWindow2),"destroy",G_CALLBACK(gtk_main_quit), NULL);
+    color.pixel = 32;
+    color.red = 1235;
+    color.green = 155;
+    color.blue = 0;
+    gtk_widget_modify_bg (pWindow2, GTK_STATE_NORMAL, &color);
   
-  pVBox2 = gtk_vbox_new(FALSE,0);
-  gtk_container_add(GTK_CONTAINER(pWindow2),pVBox2);
-  pImage2 = gtk_image_new_from_file("i.jpg");
-  gtk_box_pack_start(GTK_BOX(pVBox2), pImage2, FALSE, FALSE, 5);
-  scrollbar = gtk_scrolled_window_new(NULL, NULL);
-  gtk_box_pack_start(GTK_BOX(pVBox2), scrollbar, TRUE, TRUE, 5);
+  // L'image dazibao nommée "i.jpg" est ajoutée en entête
+    pVBox2 = gtk_vbox_new(FALSE,0);
+    gtk_container_add(GTK_CONTAINER(pWindow2),pVBox2);
+    pImage2 = gtk_image_new_from_file("i.jpg");
+    gtk_box_pack_start(GTK_BOX(pVBox2), pImage2, FALSE, FALSE, 5);
+    scrollbar = gtk_scrolled_window_new(NULL, NULL);
+    gtk_box_pack_start(GTK_BOX(pVBox2), scrollbar, TRUE, TRUE, 5);
 
-  pTextView = gtk_text_view_new();
-  gtk_container_add(GTK_CONTAINER(scrollbar), pTextView);
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollbar), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-  gtk_text_view_set_editable((GTK_TEXT_VIEW(pTextView)),FALSE);
-  gtk_text_view_set_cursor_visible((GTK_TEXT_VIEW(pTextView)),FALSE);
-
-
-  pMenuBar2 = gtk_menu_bar_new();
-
-  pMenu2 = gtk_menu_new();
-  pMenuItem2 = gtk_menu_item_new_with_label("Un texte");
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_texteN), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
-  pMenuItem2 = gtk_menu_item_new_with_label("Une image PNG");
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_pngN), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
-  pMenuItem2 = gtk_menu_item_new_with_label("Une image JPEG");
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_jpegN), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
-  pMenuItem2 = gtk_menu_item_new_with_label("Un compound");
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_compoundN), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
-  pMenuItem2 = gtk_menu_item_new_with_label("Un dated");
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_datedN), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
-  pMenuItem2 = gtk_menu_item_new_with_label("Ajouter");
-  gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
-
-  pMenu2 = gtk_menu_new();
-  pMenuItem2 = gtk_menu_item_new_with_label("L'item...");
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(supprimer), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
-  pMenuItem2 = gtk_menu_item_new_with_label("Supprimer");
-  gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
+    pTextView = gtk_text_view_new();
+    gtk_container_add(GTK_CONTAINER(scrollbar), pTextView);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollbar), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_text_view_set_editable((GTK_TEXT_VIEW(pTextView)),FALSE);
+    gtk_text_view_set_cursor_visible((GTK_TEXT_VIEW(pTextView)),FALSE);
 
 
-  pMenu2 = gtk_menu_new();
-  pMenuItem2 = gtk_menu_item_new_with_label("Quitter");
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(quitter), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
-  pMenuItem2 = gtk_menu_item_new_with_label("J'ai fini!");
-  gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
+    pMenuBar2 = gtk_menu_bar_new(); // Création de la barre de menu
 
-  pMenu2 = gtk_menu_new();
-  pMenuItem2 = gtk_menu_item_new_with_label("Compression");
-  gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
-  g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(compression), pWindow2);
-  gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
+    // Fonctions d'ajout
+    pMenu2 = gtk_menu_new();
+    // Texte
+    pMenuItem2 = gtk_menu_item_new_with_label("Un texte");
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_texteN), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
+
+    // PNG
+    pMenuItem2 = gtk_menu_item_new_with_label("Une image PNG");
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_pngN), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
+
+    // JPEG
+    pMenuItem2 = gtk_menu_item_new_with_label("Une image JPEG");
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_jpegN), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
+
+    // Compound
+    pMenuItem2 = gtk_menu_item_new_with_label("Un compound");
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_compoundN), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
+
+    // Dated
+    pMenuItem2 = gtk_menu_item_new_with_label("Un dated");
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(ajouter_datedN), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
+
+    // Menu ajout
+    pMenuItem2 = gtk_menu_item_new_with_label("Ajouter");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
 
 
-  gtk_box_pack_start(GTK_BOX(pVBox2), pMenuBar2, FALSE, FALSE, 0);
+    // Selection de l'item à supprimer
+    pMenu2 = gtk_menu_new();
+    pMenuItem2 = gtk_menu_item_new_with_label("L'item...");
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(supprimer), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
+    
+    // Menu suppression
+    pMenuItem2 = gtk_menu_item_new_with_label("Supprimer");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
 
-  ouverture2(pathToDazibao);
 
-  gtk_widget_show_all(pWindow2);
+    // Confirmation pour quitter
+    pMenu2 = gtk_menu_new();
+    pMenuItem2 = gtk_menu_item_new_with_label("Quitter");
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(quitter), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu2), pMenuItem2);
 
-  gtk_main();
+    //Menu quitter
+    pMenuItem2 = gtk_menu_item_new_with_label("J'ai fini!");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
+
+    
+    // Compression (double clic)
+    pMenu2 = gtk_menu_new();
+    pMenuItem2 = gtk_menu_item_new_with_label("Compression");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem2), pMenu2);
+    g_signal_connect(G_OBJECT(pMenuItem2), "activate", G_CALLBACK(compression), pWindow2);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar2), pMenuItem2);
+
+
+    gtk_box_pack_start(GTK_BOX(pVBox2), pMenuBar2, FALSE, FALSE, 0);
+
+    ouverture2(pathToDazibao);
+
+    gtk_widget_show_all(pWindow2);
+
+    gtk_main();
   
 }
