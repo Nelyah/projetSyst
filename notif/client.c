@@ -8,9 +8,14 @@
 
 #define BUFFER_SIZE 1024
 
-int
-main()
-{
+int main(int argc, const char *argv[]){
+/* Le rôle du client est simple : Il va se connecter au serveur 
+ * et va attendre de recevoir un message de celui-ci. Lorsqu'un 
+ * message est reçu, il va l'écrire sur la sortie standard.
+ * Le client s'attend à recevoir un message de notification, 
+ * qui commence donc par 'C'. Si ce n'est pas le cas, il affichera
+ * sur sa sortie d'erreur que le type de notification est inconnu.
+*/
     char buf[BUFFER_SIZE];
     struct sockaddr_un loc;
     int fd, rc;

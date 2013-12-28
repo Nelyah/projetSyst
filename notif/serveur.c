@@ -14,12 +14,12 @@
 #define BUFFER_SIZE 1024
 
 
-typedef struct dazib{
-    char notifPath[BUFFER_SIZE];
-    char pathDazibao[BUFFER_SIZE];
-    int tailleNotif;
-    time_t dateModif;
-    int isModif;
+typedef struct dazib{ // Définition d'une structure dazibao
+    char notifPath[BUFFER_SIZE]; // Le message à envoyer au client s'il y a modif
+    char pathDazibao[BUFFER_SIZE]; // Le chemin (absolu) du dazibao
+    int tailleNotif;  // Taille de la notification
+    time_t dateModif; // stock la dernière date de modification connue du dazibao
+    int isModif; // Flag permettant de savoir si le dazibao a été modifié
 
 } dazibao;
 
@@ -27,12 +27,23 @@ dazibao * tabDazi=NULL;
 int nbDazib;
 
 void reapChild(int sig){
+/* Cette fonction est appelée lorsque SIGCHLD est reçu.
+ * Le programme va donc récupérer les processus child qui ont terminé
+ * (et qui seraient donc en processus zombie). La macro WNOHANG permet de 
+ * ne pas bloquer le programme, si jamais le signal est reçu mais qu'aucun
+ * child n'a terminé.
+*/
     waitpid(-1,NULL,WNOHANG);
-
 }
 
 
 void checkModif(int sig){
+/* Cette fonction est appelée au moment où le SIGALRM est reçu.
+ * SIGALRM va permettre de déclancher périodiquement une vérification
+ * des dazibaos. Chaque dazibao va mettre à jour sa date de dernière 
+ * modification, et va activer ou non son flag selon si le dazibao
+ * a été modifié
+*/
     int i;
     struct stat bufStat;
     for(i=0;i<nbDazib;i++){
@@ -50,6 +61,13 @@ void checkModif(int sig){
 }
 
 void parseFile(char *pathFile){
+/* Cette fonction va permettre de parser un fichier qui serait
+ * donné en paramètre (avec l'option -f). Il va donc ajouter 
+ * tous les dazibaos donnés dans le fichier pour pouvoir 
+ * traquer leur modification.
+ * Elle n'a pas besoin de renvoyer le tableau des dazibaos, 
+ * celui ci étant une variable globale.
+*/
     unsigned char c;
     struct stat bufStat;
     char* buf=NULL;
@@ -71,15 +89,19 @@ void parseFile(char *pathFile){
     long int sizeFile=bufStat.st_size;
     long int pos=1;
     nbDazib=0;
+    // On parcourt le fichier
     while(pos<=sizeFile){
         read(fd,&c,1);
         pos++;
+        // Tant qu'on arrive pas à la fin d'une ligne (= d'un dazibao)
+        // ou qu'on arrive pas à la fin du fichier
         while(c!='\n' && pos<=sizeFile){
             buf2[i]=c;
             i++;
             read(fd,&c,1);
             pos++;
         }
+        // On remplit un dazibao
         if(pos>=sizeFile){
             buf2[i]=c;
         }
@@ -93,7 +115,6 @@ void parseFile(char *pathFile){
             perror("realpath");
             exit(EXIT_FAILURE);
         }
-        printf("1buf : %s\n",buf);
         tabDazi[nbDazib].notifPath[0]='C';
         tabDazi[nbDazib].notifPath[1]='\0';
         strcat(tabDazi[nbDazib].notifPath,buf);
@@ -121,6 +142,20 @@ void parseFile(char *pathFile){
 }
 
 int main(int argc, char* argv[]) {
+/* Le main : la première chose est de regarder quels sont les arguments
+ * qui ont été donnés en paramètre. S'il s'agit d'un -f, alors on ne 
+ * considerera que l'argument suivant, qui doit être un fichier.
+ * Les arguments peuvent aussi être un nombre arbitraire de path vers
+ * des dazibaos. Le premier cas fait appel à la fonction parseFile
+ * pour remplir tabDazi, le deuxième rempli tabDazi avec les dazibaos
+ * donnés en paramètre.
+ * Le serveur va ensuite poser sa socket, puis se mettre à écouter/attendre
+ * les connections de client-s.
+ * Chaque client va donner lieu à un fork, un processus child qui s'occupera
+ * du client. Ce processus aura un SIGALRM toutes les 10s qui va check si
+ * un dazibao de sa liste a été modifié, et si c'est le cas, va envoyer un
+ * message au client.
+*/
     struct stat bufStat;
     struct sockaddr_un local, client;
     int fd, fd2, done,i;
