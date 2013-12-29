@@ -1,2 +1,2 @@
-void lectureCompound(FILE* dazibao,unsigned int taille);
-int lectureDazibao(FILE* dazibao);
+void lectureCompound(int fd,unsigned int taille);
+int lectureDazibao(int fd);

@@ -9,13 +9,13 @@
 #include "ajouter_Jpeg.h"
 
 
-int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
+int ajouterMessageJpeg(int fd,tlv* tlv, int hasLock){
 /* Cette fonction permet d'écrire le tlv donné en argument dans le fichier dazibao.
  * Les arguments sont un FILE*, un pointeur vers le tlv rempli, et un flag
  * pour savoir si il y a eu un lock sur le fichier
 */
     if (hasLock!=1) {
-        if(flock(fileno(dazibao),LOCK_EX)!=0){
+        if(flock(fd,LOCK_EX)!=0){
             perror("flock : ");
             exit(EXIT_FAILURE);
         }
@@ -46,8 +46,8 @@ int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
         exit(EXIT_FAILURE);
     }
     // On écrit le type du tlv
-    if (fwrite(&tlv->type,1,1,dazibao)==0) {
-        perror("fwrite ");
+    if (write(fd,&tlv->type,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // On écrit la longueur du tlv
@@ -56,28 +56,28 @@ int ajouterMessageJpeg(FILE* dazibao,tlv* tlv, int hasLock){
     l1=ecrireLenght1(lenght);
     l2=ecrireLenght2(lenght,l1);
     l3=ecrireLenght3(lenght,l1,l2);
-    if (fwrite(&l1,1,1,dazibao)==0) {
-        perror("fwrite :");
+    if (write(fd,&l1,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if (fwrite(&l2,1,1,dazibao)==0) {
-        perror("fwrite :");
+    if (write(fd,&l2,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if (fwrite(&l3,1,1,dazibao)==0) {
-        perror("fwrite :");
+    if (write(fd,&l3,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // On écrit le contenu de l'image qui était stocké dans un unsigned char*
-    if(fwrite(tlv->contenuImage,tlv->lenght,1,dazibao)==0){
-        perror("fwrite");
+    if(write(fd,tlv->contenuImage,tlv->lenght)==0){
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // Affichage sur l'interface graphique
     gtk_text_buffer_insert_pixbuf(buf,&end, pix);
     gtk_text_buffer_insert(buf, &end, "\n", -1);
     if (hasLock!=1) {
-        if(flock(fileno(dazibao),LOCK_UN)!=0){
+        if(flock(fd,LOCK_UN)!=0){
             perror("flock : ");
             exit(EXIT_FAILURE);
         }
@@ -182,19 +182,19 @@ tlv* ajouter_jpeg(int opt){
         gtk_text_buffer_insert(buf2, &end, num_msg2, -1);
         gtk_text_buffer_insert(buf2, &end, "------------------------------------------------------------------------------------------------------------------------------------\n", -1);
         free(num_msg2);
-        FILE* dazibao=NULL;
-        if((dazibao=fopen(pathToDazibao,"a+b"))==NULL){
-            perror("fopen");
+        int fd;
+        if((fd=open(pathToDazibao,O_RDWR|O_APPEND))==-1){
+            perror("open");
             exit(EXIT_FAILURE);
         }
         struct stat statBuf;
-        if(stat(pathToDazibao,&statBuf)==-1){
-            perror("stat");
+        if(fstat(fd,&statBuf)==-1){
+            perror("fstat");
             exit(EXIT_FAILURE);
         }
         posM[num_msg]=statBuf.st_size;
-        ajouterMessageJpeg(dazibao,tlvJpeg, 0);
-        fclose(dazibao);
+        ajouterMessageJpeg(fd,tlvJpeg, 0);
+        close(fd);
         return NULL;
     }else{
         return tlvJpeg;

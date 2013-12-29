@@ -30,13 +30,13 @@ void compression(){
     unsigned char type=0, l1=0,l2=0,l3=0;
     unsigned int lenght=0;
     unsigned char* contenu=NULL;
-    FILE* f=NULL;
-    if((f=fopen(pathToDazibao,"r+b"))==NULL){
-        perror("fopen");
+    int fd;
+    if((fd=open(pathToDazibao,O_RDWR))==-1){
+        perror("open");
         exit(EXIT_FAILURE);
     }
     // On pose un verrou sur le fichier
-    if(flock(fileno(f),LOCK_EX)==-1){
+    if(flock(fd,LOCK_EX)==-1){
         perror("flock");
         exit(EXIT_FAILURE);
     }
@@ -45,21 +45,21 @@ void compression(){
     for(i=1;i<=num_msg;i++) {
     // On se place à sa position
     // Et on stock ses caractéristiques
-        fseek(f,posM[i],SEEK_SET);
-        if(fread(&type,1,1,f)==0){
-            perror("fread");
+        lseek(fd,posM[i],SEEK_SET);
+        if(read(fd,&type,1)==0){
+            perror("read");
             exit(EXIT_FAILURE);
         }
-        if(fread(&l1,1,1,f)==0){
-            perror("fread");
+        if(read(fd,&l1,1)==0){
+            perror("read");
             exit(EXIT_FAILURE);
         }
-        if(fread(&l2,1,1,f)==0){
-            perror("fread");
+        if(read(fd,&l2,1)==0){
+            perror("read");
             exit(EXIT_FAILURE);
         }
-        if(fread(&l3,1,1,f)==0){
-            perror("fread");
+        if(read(fd,&l3,1)==0){
+            perror("read");
             exit(EXIT_FAILURE);
         }
         lenght=lireLenght(l1,l2,l3);
@@ -67,31 +67,31 @@ void compression(){
             perror("malloc");
             exit(EXIT_FAILURE);
         }
-        if(fread(contenu,lenght,1,f)==-1){
-            perror("fread");
+        if(read(fd,contenu,lenght)==-1){
+            perror("read");
             exit(EXIT_FAILURE);
         }
         // On se place maintenant à la taille qu'on a parcourue jusqu'à présent.
-        fseek(f,tailleParc,SEEK_SET);
+        lseek(fd,tailleParc,SEEK_SET);
         // On réécrit ses caractéristiques
-        if(fwrite(&type,1,1,f)==0){
-            perror("fwrite");
+        if(write(fd,&type,1)==0){
+            perror("write");
             exit(EXIT_FAILURE);
         }
-        if(fwrite(&l1,1,1,f)==0){
-            perror("fwrite");
+        if(write(fd,&l1,1)==0){
+            perror("write");
             exit(EXIT_FAILURE);
         }
-        if(fwrite(&l2,1,1,f)==0){
-            perror("fwrite");
+        if(write(fd,&l2,1)==0){
+            perror("write");
             exit(EXIT_FAILURE);
         }
-        if(fwrite(&l3,1,1,f)==0){
-            perror("fwrite");
+        if(write(fd,&l3,1)==0){
+            perror("write");
             exit(EXIT_FAILURE);
         }
-        if(fwrite(contenu,lenght,1,f)==0){
-            perror("fwrite");
+        if(write(fd,contenu,lenght)==0){
+            perror("write");
             exit(EXIT_FAILURE);
         }
         // On remet à jour sa nouvelle position
@@ -106,10 +106,10 @@ void compression(){
         exit(EXIT_FAILURE);
     }
 
-    if(flock(fileno(f),LOCK_UN)==-1){
+    if(flock(fd,LOCK_UN)==-1){
         perror("flock");
         exit(EXIT_FAILURE);
     }
-    fclose(f);
+    close(fd);
 
 }

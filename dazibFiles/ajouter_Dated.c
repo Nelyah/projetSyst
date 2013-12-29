@@ -12,14 +12,13 @@
 #include "ajouter_Compound.h"
 
 
-int ajouterMessageDated(FILE *dazibao,tlv* tlv,int hasLock){
+int ajouterMessageDated(int fd,tlv* tlv,int hasLock){
 /* Cette fonction s'occupe d'écrire directement dans le fichier dazibao.
  * Elle reçoit en argument le FILE *, un pointeur sur tlv (normalement rempli avec un Dated
  * et un flag pour savoir si cette fonction doit lock le fichier ou non 
  * (ie : si elle a été appelée par une autre fonction).
  */
 
-    int fd=fileno(dazibao);
     GtkTextIter end;
     GtkTextBuffer *buf;
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
@@ -35,8 +34,8 @@ int ajouterMessageDated(FILE *dazibao,tlv* tlv,int hasLock){
         }
     }
     // On écrit le type du tlv dans le fichier
-    if((err=fwrite(&tlv->type,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if(write(fd,&tlv->type,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
 
@@ -46,16 +45,16 @@ int ajouterMessageDated(FILE *dazibao,tlv* tlv,int hasLock){
     l1=ecrireLenght1(lenght);
     l2=ecrireLenght2(lenght,l1);
     l3=ecrireLenght3(lenght,l1,l2);
-    if ((err=fwrite(&l1,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if (write(fd,&l1,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if ((err=fwrite(&l2,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if (write(fd,&l2,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if ((err=fwrite(&l3,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if (write(fd,&l3,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // On écrit la date, en convertissant pour écrire octet par octet
@@ -82,35 +81,35 @@ int ajouterMessageDated(FILE *dazibao,tlv* tlv,int hasLock){
     }
     // Affichage sur l'interface graphique
     gtk_text_buffer_insert(buf, &end, g_locale_to_utf8(ctime(&tlv->time), -1, NULL, NULL, NULL), -1);
-    if((err=fwrite(&t1,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if(write(fd,&t1,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if((err=fwrite(&t2,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if(write(fd,&t2,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if((err=fwrite(&t3,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if(write(fd,&t3,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if((err=fwrite(&t4,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if(write(fd,&t4,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // Ensuite on écrit le sous tlv en appelant la fonction adaptée au type.
     if(tlv->tlvList[0]->type==2) {
         gtk_text_buffer_insert(buf, &end, g_locale_to_utf8(tlv->tlvList[0]->textOrPath, -1, NULL, NULL, NULL), -1);
         gtk_text_buffer_insert(buf, &end, g_locale_to_utf8("\n", -1, NULL, NULL, NULL), -1);
-        ajouterMessageTxt(dazibao,tlv->tlvList[0],1);
+        ajouterMessageTxt(fd,tlv->tlvList[0],1);
     }else if(tlv->tlvList[0]->type==3){
-        ajouterMessagePng(dazibao,tlv->tlvList[0],1);
+        ajouterMessagePng(fd,tlv->tlvList[0],1);
     }else if(tlv->tlvList[0]->type==4){
-        ajouterMessageJpeg(dazibao,tlv->tlvList[0],1);
+        ajouterMessageJpeg(fd,tlv->tlvList[0],1);
     }else if(tlv->tlvList[0]->type==5){ 
-        ajouterMessageCompound(dazibao,tlv->tlvList[0],1);
+        ajouterMessageCompound(fd,tlv->tlvList[0],1);
     }else if(tlv->tlvList[0]->type==6){
-        ajouterMessageDated(dazibao,tlv->tlvList[0],1);
+        ajouterMessageDated(fd,tlv->tlvList[0],1);
     }
     if(hasLock!=1) {
         if((err=flock(fd,LOCK_UN))!=0){
@@ -191,8 +190,14 @@ tlv* ajouter_dated(int opt){
                             tlvDated->time=now;
                             // on appelle la fonction pour un sous-tlv texte
                             tlv=ajouter_texte(2);
-                            if(tlv==NULL || tlv->lenght > 16777216){ // Si le tlv a retourné NULL ou trop grand
-                                free(tlvDated);
+                            if(tlv==NULL){   // Si le tlv a retourné NULL
+                                freeTlv(tlvDated);
+                                gtk_widget_destroy(pBoite);
+                                return NULL;
+                            }
+                            if(tlv->lenght > 16777216){ // Si la taille du Tlv est trop grande
+                                freeTlv(tlv);
+                                freeTlv(tlvDated);
                                 gtk_widget_destroy(pBoite);
                                 return NULL;
                             }
@@ -207,10 +212,14 @@ tlv* ajouter_dated(int opt){
                                 exit(EXIT_FAILURE);
                             }
                             tlvDated->tlvList[0]=ajouter_png(3);
-                            if(tlvDated->tlvList[0]==NULL || 
-                                tlvDated->tlvList[0]->lenght > 16777216){
-
-                                free(tlvDated);
+                            if(tlvDated->tlvList[0]==NULL){
+                                freeTlv(tlvDated);
+                                gtk_widget_destroy(pBoite);
+                                return NULL;
+                            }
+                            if(tlvDated->tlvList[0]->lenght > 16777216){
+                                freeTlv(tlv);
+                                freeTlv(tlvDated);
                                 gtk_widget_destroy(pBoite);
                                 return NULL;
                             }
@@ -226,10 +235,14 @@ tlv* ajouter_dated(int opt){
                                 exit(EXIT_FAILURE);
                             }
                             tlvDated->tlvList[0]=ajouter_jpeg(4);
-                            if(tlvDated->tlvList[0]==NULL ||
-                                tlvDated->tlvList[0]->lenght > 16777216){
-
-                                free(tlvDated);
+                            if(tlvDated->tlvList[0]==NULL){
+                                freeTlv(tlvDated);
+                                gtk_widget_destroy(pBoite);
+                                return NULL;
+                            }
+                            if(tlvDated->tlvList[0]->lenght > 16777216){ 
+                                freeTlv(tlv);
+                                freeTlv(tlvDated);
                                 gtk_widget_destroy(pBoite);
                                 return NULL;
                             }
@@ -245,9 +258,14 @@ tlv* ajouter_dated(int opt){
                                 exit(EXIT_FAILURE);
                             }
                             tlvDated->tlvList[0]=ajouter_compound(5);
-                            if(tlvDated->tlvList[0]==NULL ||
-                                tlvDated->tlvList[0]->lenght > 16777216){
-                                free(tlvDated);
+                            if(tlvDated->tlvList[0]==NULL){
+                                freeTlv(tlvDated);
+                                gtk_widget_destroy(pBoite);
+                                return NULL;
+                            }
+                            if(tlvDated->tlvList[0]->lenght > 16777216){ 
+                                freeTlv(tlv);
+                                freeTlv(tlvDated);
                                 gtk_widget_destroy(pBoite);
                                 return NULL;
                             }
@@ -263,9 +281,14 @@ tlv* ajouter_dated(int opt){
                                 exit(EXIT_FAILURE);
                             }
                             tlvDated->tlvList[0]=ajouter_dated(6);
-                            if(tlvDated->tlvList[0]==NULL ||
-                                tlvDated->tlvList[0]->lenght > 16777216){
-                                free(tlvDated);
+                            if(tlvDated->tlvList[0]==NULL){
+                                freeTlv(tlvDated);
+                                gtk_widget_destroy(pBoite);
+                                return NULL;
+                            }
+                            if(tlvDated->tlvList[0]->lenght > 16777216){                                 
+                                freeTlv(tlv);
+                                freeTlv(tlvDated);
                                 gtk_widget_destroy(pBoite);
                                 return NULL;
                             }
@@ -289,7 +312,6 @@ tlv* ajouter_dated(int opt){
             }
 
             break;
-      /* L utilisateur annule */
         case GTK_RESPONSE_CANCEL:
         case GTK_RESPONSE_NONE:
         default:
@@ -306,7 +328,7 @@ tlv* ajouter_dated(int opt){
         num_msg++;
         char* num_msg2=NULL;
         struct stat statBuf;
-        FILE* dazibao=NULL;
+        int fd;
         if((num_msg2=malloc(10*sizeof(char)))==NULL){
             perror("malloc");
             exit(EXIT_FAILURE);
@@ -320,17 +342,17 @@ tlv* ajouter_dated(int opt){
         gtk_text_buffer_get_end_iter(buf,&end);
         gtk_text_buffer_insert(buf, &end, num_msg2, -1);
         gtk_text_buffer_insert(buf, &end, "------------------------------------------------------------------------------------------------------------------------------------\n", -1);
-        if(stat(pathToDazibao,&statBuf)==-1){
-            perror("stat");
+        if((fd=open(pathToDazibao,O_RDWR|O_APPEND))==-1){
+            perror("open");
+            exit(EXIT_FAILURE);
+        }
+        if(fstat(fd,&statBuf)==-1){
+            perror("fstat");
             exit(EXIT_FAILURE);
         }
         posM[num_msg]=statBuf.st_size;
-        if((dazibao=fopen(pathToDazibao,"a+b"))==NULL){
-            perror("fopen");
-            exit(EXIT_FAILURE);
-        }
-        ajouterMessageDated(dazibao,tlvDated,0);
-        fclose(dazibao);
+        ajouterMessageDated(fd,tlvDated,0);
+        close(fd);
         return NULL;
     }else{
         return tlvDated;

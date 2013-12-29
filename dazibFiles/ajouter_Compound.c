@@ -13,7 +13,7 @@
 
 
 
-int ajouterMessageCompound(FILE* dazibao,tlv* tlv, int hasLock){ 
+int ajouterMessageCompound(int fd,tlv* tlv, int hasLock){ 
 /* Cette fonction est celle qui va écrire dans le fichier dazibao.
  * Elle prend en argument le FILE* du fichier, un tlv* rempli 
  * (normalement avec un tlv compound) et un flag pour savoir 
@@ -28,7 +28,7 @@ int ajouterMessageCompound(FILE* dazibao,tlv* tlv, int hasLock){
     gtk_text_view_set_justification((GTK_TEXT_VIEW(pTextView)),GTK_JUSTIFY_CENTER);
     gtk_text_buffer_get_end_iter(buf,&end);
     if(hasLock!=1) {
-        if(flock(fileno(dazibao),LOCK_EX)==-1){
+        if(flock(fd,LOCK_EX)==-1){
             perror("flock ");
             exit(EXIT_FAILURE);
         }
@@ -37,8 +37,8 @@ int ajouterMessageCompound(FILE* dazibao,tlv* tlv, int hasLock){
         printf("Erreur : La taille du message est trop grande\n");
         exit(EXIT_FAILURE);
     }
-    if(fwrite(&tlv->type,1,1,dazibao)==0) { // Ecriture du type
-        perror("fwrite :");
+    if(write(fd,&tlv->type,1)==0) { // Ecriture du type
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // écriture de la longueur sur 3 octets 
@@ -47,16 +47,16 @@ int ajouterMessageCompound(FILE* dazibao,tlv* tlv, int hasLock){
     l1=ecrireLenght1(tlv->lenght);
     l2=ecrireLenght2(tlv->lenght,l1);
     l3=ecrireLenght3(tlv->lenght,l1,l2);
-    if (fwrite(&l1,1,1,dazibao)==0) {
-        perror("fwrite :");
+    if (write(fd,&l1,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if (fwrite(&l2,1,1,dazibao)==0) {
-        perror("fwrite :");
+    if (write(fd,&l2,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if (fwrite(&l3,1,1,dazibao)==0) {
-        perror("fwrite :");
+    if (write(fd,&l3,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     /* Ici sont écrits les tlv contenus dans le tlv compound
@@ -68,19 +68,19 @@ int ajouterMessageCompound(FILE* dazibao,tlv* tlv, int hasLock){
         if(tlv->tlvList[i]->type==2) {
             gtk_text_buffer_insert(buf, &end, g_locale_to_utf8(tlv->tlvList[0]->textOrPath, -1, NULL, NULL, NULL), -1);
             gtk_text_buffer_insert(buf, &end, g_locale_to_utf8("\n", -1, NULL, NULL, NULL), -1);
-            ajouterMessageTxt(dazibao,(tlv->tlvList[i]),1);
+            ajouterMessageTxt(fd,(tlv->tlvList[i]),1);
         }else if(tlv->tlvList[i]->type==3){
-            ajouterMessagePng(dazibao,(tlv->tlvList[i]),1);
+            ajouterMessagePng(fd,(tlv->tlvList[i]),1);
         }else if(tlv->tlvList[i]->type==4){
-            ajouterMessageJpeg(dazibao,(tlv->tlvList[i]),1);
+            ajouterMessageJpeg(fd,(tlv->tlvList[i]),1);
         }else if(tlv->tlvList[i]->type==5){
-            ajouterMessageCompound(dazibao,(tlv->tlvList[i]),1);
+            ajouterMessageCompound(fd,(tlv->tlvList[i]),1);
         }else if(tlv->tlvList[i]->type==6){
-            ajouterMessageDated(dazibao,(tlv->tlvList[i]),1);
+            ajouterMessageDated(fd,(tlv->tlvList[i]),1);
         }
     }
     if(hasLock!=1) {
-        if(flock(fileno(dazibao),LOCK_UN)!=0){
+        if(flock(fd,LOCK_UN)!=0){
             perror("flock : ");
             exit(EXIT_FAILURE);
         }
@@ -151,12 +151,15 @@ tlv* ajouter_compound(int opt){
                     // tlv déjà rempli, ou NULL si l'action n'a pas pu aboutir
                     tlvComp->tlvList[i]=choisirTlv();               
                     // Dans le cas où cela n'a pas pu aboutir 
-                    if(tlvComp->tlvList[i]==NULL ||
-                        tlvComp->tlvList[i]->lenght > 16777216){
-
-                        if(tlvComp->tlvList[i]->lenght > 16777216){
-                            printf("La taille du tlv est trop grande\n");
-                        }
+                    if(tlvComp->tlvList[i]==NULL){
+                        for(j=0;j<i;j++)
+                            freeTlv(tlvComp->tlvList[j]);
+                        free(tlvComp);
+                        gtk_widget_destroy(pBoite);
+                        return NULL;
+                    }
+                    if(tlvComp->tlvList[i]->lenght > 16777216){
+                        printf("La taille du tlv est trop grande\n");
                         for(j=0;j<i;j++)
                             freeTlv(tlvComp->tlvList[j]);
                         free(tlvComp);
@@ -171,7 +174,7 @@ tlv* ajouter_compound(int opt){
             if(opt==0){
                 struct stat statBuf;
                 char* num_msg2=NULL;
-                FILE* dazibao=NULL;
+                int fd;
                 num_msg++;
                 if((num_msg2=malloc(10*sizeof(char)))==NULL){
                     perror("malloc");
@@ -187,18 +190,18 @@ tlv* ajouter_compound(int opt){
                 gtk_text_buffer_get_end_iter(buf,&end);
                 gtk_text_buffer_insert(buf, &end, num_msg2, -1);
                 gtk_text_buffer_insert(buf, &end, "------------------------------------------------------------------------------------------------------------------------------------\n", -1);
-                if(stat(pathToDazibao,&statBuf)==-1){
-                    perror("stat");
+                if((fd=open(pathToDazibao,O_RDWR|O_APPEND))==-1){
+                    perror("open");
+                    exit(EXIT_FAILURE);
+                }
+                if(fstat(fd,&statBuf)==-1){
+                    perror("fstat");
                     exit(EXIT_FAILURE);
                 }
                 // On note la position du début de ce tlv
                 posM[num_msg]=statBuf.st_size;
-                if((dazibao=fopen(pathToDazibao,"a+b"))==NULL){
-                    perror("fopen");
-                    exit(EXIT_FAILURE);
-                }
-                ajouterMessageCompound(dazibao,tlvComp,0);
-                fclose(dazibao);
+                ajouterMessageCompound(fd,tlvComp,0);
+                close(fd);
 	            gtk_widget_destroy(pBoite);
                 return NULL;
             }else{

@@ -8,17 +8,16 @@
 #include "ajouter_texte.h"
 
 
-int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
+int ajouterMessageTxt(int fd,tlv* tlv,int hasLock){
 /* Cette fonction va permettre d'écrire dans le fichier dazibao
  * Elle prend en argument un FILE* sur le fichier, un pointeur sur tlv
  * qui est normalement rempli pour un tlv texte, et un flag qui permet de 
  * savoir si cette fonction doit lock le fichier ou non (si elle est appelée 
  * par un parent ou non).
 */
-    int err;
     if (hasLock!=1) {
-        if((err=flock(fileno(dazibao),LOCK_EX))!=0){
-            perror("flock : ");
+        if(flock(fd,LOCK_EX)!=0){
+            perror("lock");
             exit(EXIT_FAILURE);
         }
     }
@@ -27,8 +26,8 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
         exit(EXIT_FAILURE);
     }
     // On écrit le type du tlv
-    if((err=fwrite(&tlv->type,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if(write(fd,&tlv->type,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // On écrit sa taille
@@ -37,25 +36,25 @@ int ajouterMessageTxt(FILE* dazibao,tlv* tlv,int hasLock){
     l1=ecrireLenght1(lenght);
     l2=ecrireLenght2(lenght,l1);
     l3=ecrireLenght3(lenght,l1,l2);
-    if ((err=fwrite(&l1,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if (write(fd,&l1,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if ((err=fwrite(&l2,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if (write(fd,&l2,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    if ((err=fwrite(&l3,1,1,dazibao))==0) {
-        perror("fwrite :");
+    if (write(fd,&l3,1)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     // On écrit le contenu du texte
-    if((err=fwrite(tlv->textOrPath,tlv->lenght,1,dazibao))==0) {
-        perror("fwrite :");
+    if(write(fd,tlv->textOrPath,tlv->lenght)==0) {
+        perror("write");
         exit(EXIT_FAILURE);
     }
     if(hasLock!=1) {
-        if((err=flock(fileno(dazibao),LOCK_UN))!=0){
+        if(flock(fd,LOCK_UN)!=0){
             perror("flock : ");
             exit(EXIT_FAILURE);
         }
@@ -114,9 +113,13 @@ tlv* ajouter_texte(int opt){
             if(opt==0){
                 num_msg++;
                 struct stat statBuf;
-                FILE *f=fopen(pathToDazibao,"a+b");
-                if(stat(pathToDazibao,&statBuf)==-1){
-                    perror("stat");
+                int fd;
+                if((fd=open(pathToDazibao,O_RDWR|O_APPEND))==-1){
+                    perror("open");
+                    exit(EXIT_FAILURE);
+                }
+                if(fstat(fd,&statBuf)==-1){
+                    perror("fstat");
                     exit(EXIT_FAILURE);
                 }
                 posM[num_msg]=statBuf.st_size;
@@ -136,8 +139,8 @@ tlv* ajouter_texte(int opt){
                 gtk_text_buffer_insert(buf, &end, "------------------------------------------------------------------------------------------------------------------------------------\n", -1);
                 gtk_text_buffer_insert(buf, &end, g_locale_to_utf8(new_msg->textOrPath, -1, NULL, NULL, NULL), -1);
                 gtk_text_buffer_insert(buf, &end, g_locale_to_utf8("\n", -1, NULL, NULL, NULL), -1);
-                ajouterMessageTxt(f,new_msg,0);
-                fclose(f);
+                ajouterMessageTxt(fd,new_msg,0);
+                close(fd);
                 free(num_msg2);
                 gtk_widget_destroy(pEntry);	
                 gtk_widget_destroy(pBoite);	

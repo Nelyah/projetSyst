@@ -22,36 +22,44 @@ int ouverture(const char *path){
  * dazibao, elle renvoie 0, et 10 sinon.
 */
   
-    FILE*dazibao=fopen(path,"rb");    
-    if (dazibao==NULL) {
-        printf("Problème à l'ouverture du fichier.\n");
+    int fd;
+    if((fd=open(path,O_RDONLY))==-1){
+        perror("open");
         exit(EXIT_FAILURE);
     }
-    int err;
-    if((err=flock(fileno(dazibao),LOCK_SH))!=0) {
+    if((flock(fd,LOCK_SH))!=0) {
         perror("flock : ");
     }
-    if((err=stat(path,&s))!=0) {
-        perror("stat : ");
+    if(fstat(fd,&s)!=0) {
+        perror("fstat");
         exit(EXIT_FAILURE);
     }
     // Lecture du numero magique et de la version
     unsigned char magic,version;
-    fread(&magic,1,1,dazibao);
-    if (magic!=53) {
+    if(read(fd,&magic,1)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
+    if(magic!=53) {
         printf("Le numéro magique n'est pas valide\n");
         return 10;
     }
-    fread(&version,1,1,dazibao);
+    if(read(fd,&version,1)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
     if (version!=0) {
       printf("Le numéro de la version n'est pas valide\n");
       return 10;
     }
     // Lecture de mbz
     short int mbz;
-    fread(&mbz,2,1,dazibao);
-    if((err=flock(fileno(dazibao),LOCK_UN))!=0) {
-        perror("flock : ");
+    if(read(fd,&mbz,2)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
+    if((flock(fd,LOCK_UN))!=0) {
+        perror("flock");
         exit(EXIT_FAILURE);
     }
     return 0;
@@ -63,37 +71,37 @@ void ouverture2(const char *path){
  * à la fonction "lectureDazibao" tant que la taille totale de ce qu'on a 
  * lu ne dépasse pas la taille du dazibao.
 */
-    FILE*f=fopen(pathToDazibao,"rb");
-    if (f==NULL) {
-        printf("Problème à l'ouverture du fichier.\n");
+    int fd;
+    if((fd=open(pathToDazibao,O_RDONLY))==-1){
+        perror("open");
         exit(EXIT_FAILURE);
     }
     int err;
-    if((err=flock(fileno(f),LOCK_SH))!=0) {
-        perror("flock : ");
+    if((flock(fd,LOCK_SH))!=0) {
+        perror("flock");
         exit(EXIT_FAILURE);
     }
-    fseek(f,4,SEEK_SET);
+    lseek(fd,4,SEEK_SET);
     unsigned int i=0;
     unsigned long int tailleParcourueFichier=4,tailleLecture;
     num_msg = 0;
-    stat(pathToDazibao,&s);
+    fstat(fd,&s);
     while(tailleParcourueFichier<s.st_size){
         if(isPad1_N!=1 && isComp_Dated!=1){
             i++;
             num_msg ++;
         }
-        if((tailleLecture=lectureDazibao(f))!=-1) {
+        if((tailleLecture=lectureDazibao(fd))!=-1) {
             tailleParcourueFichier=tailleParcourueFichier+4+tailleLecture;
         }else{
             tailleParcourueFichier++;
         }
   }
-  if((err=flock(fileno(f),LOCK_UN))!=0) {
-    perror("flock : ");
+  if((err=flock(fd,LOCK_UN))!=0) {
+    perror("flock");
     exit(EXIT_FAILURE);
   }
-  fclose(f);
+  close(fd);
 }
 
 

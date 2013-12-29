@@ -1,10 +1,13 @@
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "typedef.h"
 #include "globalvar.h"
 #include "lecture.h"
 #include "fonctionsGenerales.h"
 
-void lectureCompound(FILE* dazibao,unsigned int taille){
+void lectureCompound(int fd,unsigned int taille){
 /* Cette fonction est appelée par la fonction de lecture
  * Elle va appeler la lecture du dazibao autant de fois que nécessaire
  * (ie : tant que la longueur totale lu est inferieure à la taille
@@ -13,7 +16,7 @@ void lectureCompound(FILE* dazibao,unsigned int taille){
     unsigned int tailleParcourue=0;
     unsigned long int tailleLecture=0;
     while(taille>tailleParcourue){
-        if((tailleLecture=lectureDazibao(dazibao))!=-1) {
+        if((tailleLecture=lectureDazibao(fd))!=-1) {
             tailleParcourue=tailleParcourue+4+tailleLecture;
         }else{ // Si c'est un pad1 (1 octet)
             tailleParcourue++;
@@ -21,7 +24,7 @@ void lectureCompound(FILE* dazibao,unsigned int taille){
     }
 }
 
-int lectureDazibao(FILE* dazibao){
+int lectureDazibao(int fd){
 /* Cette fonction va se charger de la lecture du fichier dazibao
  * spécifié par le FILE*. Cette fonciton ne va lire qu'un seul tlv
  * et va renvoyer sa longueur
@@ -42,7 +45,10 @@ int lectureDazibao(FILE* dazibao){
     sprintf(num_msg2, "%d", num_msg);
   
     // On commence par lire le type 
-    fread(&type,1,1,dazibao);
+    if(read(fd,&type,1)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
 
     buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
     gtk_text_view_set_wrap_mode((GTK_TEXT_VIEW(pTextView)),GTK_WRAP_WORD);
@@ -62,12 +68,21 @@ int lectureDazibao(FILE* dazibao){
         return -1;
     }
     if((type!=0 && type!=1) && isComp_Dated==0){ // Si le message n'a pas de parents
-        posM[num_msg]=ftell(dazibao)-1;          // Et n'est pas pad1 ou padN
+        posM[num_msg]=lseek(fd,0,SEEK_CUR)-1;          // Et n'est pas pad1 ou padN
     }
     // On lit la taille
-    fread(&lenght1,1,1,dazibao);
-    fread(&lenght2,1,1,dazibao);
-    fread(&lenght3,1,1,dazibao);
+    if(read(fd,&lenght1,1)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
+    if(read(fd,&lenght2,1)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
+    if(read(fd,&lenght3,1)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
     lenght=lireLenght(lenght1,lenght2,lenght3);
     // On alloue suffisemment de mémoire pour lire le contenu
     if((contenu=malloc((lenght+2)*sizeof(unsigned char)))==NULL && lenght!=0){
@@ -76,7 +91,7 @@ int lectureDazibao(FILE* dazibao){
     }
     if (type==5) { // S'il s'agit d'un compound
         isComp_Dated=1; // On place le flag
-        lectureCompound(dazibao,lenght); // On appelle la fonction pour les compounds
+        lectureCompound(fd,lenght); // On appelle la fonction pour les compounds
         free(contenu);
         isComp_Dated=0;
         return lenght; 
@@ -85,10 +100,22 @@ int lectureDazibao(FILE* dazibao){
         // On lit sa date
         unsigned char l1,l2,l3,l4;
         isComp_Dated=1; // On place le flag
-        fread(&l1,1,1,dazibao);
-        fread(&l2,1,1,dazibao);
-        fread(&l3,1,1,dazibao);
-        fread(&l4,1,1,dazibao);
+        if(read(fd,&l1,1)==0){
+            perror("read");
+            exit(EXIT_FAILURE);
+        }
+        if(read(fd,&l2,1)==0){
+            perror("read");
+            exit(EXIT_FAILURE);
+        }
+        if(read(fd,&l3,1)==0){
+            perror("read");
+            exit(EXIT_FAILURE);
+        }
+        if(read(fd,&l4,1)==0){
+            perror("read");
+            exit(EXIT_FAILURE);
+        }
         secondes=256*256*256*l1+256*256*l2+256*l3+l4;
         // On affiche la date
         buf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(pTextView));
@@ -98,13 +125,16 @@ int lectureDazibao(FILE* dazibao){
         gtk_text_buffer_insert(buf, &end, g_locale_to_utf8(ctime(&secondes), -1, NULL, NULL, NULL), -1);
         
         // On relance la fonction pour lire son sous-tlv
-        lectureDazibao(dazibao);
+        lectureDazibao(fd);
         free(contenu);
         isComp_Dated=0;
         return lenght;
     }
     // On lit le contenu
-    fread(contenu,lenght,1,dazibao);
+    if(read(fd,contenu,lenght)==0){
+        perror("read");
+        exit(EXIT_FAILURE);
+    }
     if (type==1) { // Si c'est un pad N
         isPad1_N=1;
         free(contenu);
@@ -124,14 +154,17 @@ int lectureDazibao(FILE* dazibao){
         // On crée un fichier temporaire dans /tmp/
         char tempFile[]="/tmp/dbz.XXXXXX";
         nomImage=mktemp(tempFile);
-        FILE *f=NULL;
-        if((f=fopen(nomImage,"w+b"))==NULL){
-            perror("fopen ");
+        int fd_image;
+        if((fd_image=open(nomImage,O_RDWR|O_CREAT,S_IRUSR,S_IWUSR))==-1){
+            perror("open ");
             exit(EXIT_FAILURE);
         }
         // On écrit le contenu du tlv dans le fichier temporaire que l'on vient de créer
-        fwrite(contenu,lenght,1,f);
-        fclose(f);
+        if(write(fd_image,contenu,lenght)==0){
+            perror("write");
+            exit(EXIT_FAILURE);
+        }
+        close(fd_image);
         pix = gdk_pixbuf_new_from_file_at_size(nomImage,400,400, &error);
         if (error){
             GtkWidget *msg;
@@ -155,13 +188,16 @@ int lectureDazibao(FILE* dazibao){
     }else if (type==4) { // Si c'est un jpeg (même chose que png)
         char tempFile[]="/tmp/test.dbzXXXXXX";
         nomImage=mktemp(tempFile);
-        FILE *f=NULL;
-        if((f=fopen(nomImage,"w+b"))==NULL){
-            perror("fopen ");
+        int fd_image;
+        if((fd_image=open(nomImage,O_RDWR|O_CREAT,S_IRUSR,S_IWUSR))==-1){
+            perror("open ");
             exit(EXIT_FAILURE);
         }
-        fwrite(contenu,lenght,1,f);
-        fclose(f);
+        if(write(fd_image,contenu,lenght)==0){
+            perror("write");
+            exit(EXIT_FAILURE);
+        }
+        close(fd_image);
         pix = gdk_pixbuf_new_from_file_at_size(nomImage,400,400, &error);
         if (error){
             GtkWidget *msg;
