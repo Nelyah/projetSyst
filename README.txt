@@ -12,7 +12,7 @@ La fonction créer va générer un fichier "new_dazibao.dzb" dans le répertoire
 et ne va rien faire sinon.
 
 
-Dans le dossier notif, les fichiers sources client.c et serveur.c peuvent être trouvés.
+Dans le dossier notifications, les fichiers sources client.c et serveur.c peuvent être trouvés.
 Ils peuvent également être compilés grâce au Makefile présent dans le répertoire. 
 L'exécutable "serveur" prend au moins un argument : 
 Si le premier argument est "-f", il va considérer que le second est un fichier, qu'il tentera alors
