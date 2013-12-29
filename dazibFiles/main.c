@@ -7,6 +7,7 @@
 #include "typedef.h"
 #include "fileSelection.h"
 #include "quitter.h"
+#include "creerDazibao.h"
 
 
 #define NB_MESSAGE 1024
@@ -73,10 +74,13 @@ int main(int argc, char **argv){
 
     pMenuBar = gtk_menu_bar_new();
     pMenu = gtk_menu_new();
-    pMenuItem = gtk_menu_item_new_with_label("Un Dazibao");
+    pMenuItem = gtk_menu_item_new_with_label("Ouvrir...");
     g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(creer_file_selection), (GtkWidget*)pWindow);
     gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
-    pMenuItem = gtk_menu_item_new_with_label("Ouvrir...");
+    pMenuItem = gtk_menu_item_new_with_label("Créer");
+    g_signal_connect(G_OBJECT(pMenuItem), "activate", G_CALLBACK(nouveauDazibao), (GtkWidget*)pWindow);
+    gtk_menu_shell_append(GTK_MENU_SHELL(pMenu), pMenuItem);
+    pMenuItem = gtk_menu_item_new_with_label("Dazibao");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(pMenuItem), pMenu);
     gtk_menu_shell_append(GTK_MENU_SHELL(pMenuBar), pMenuItem);
 
