@@ -36,6 +36,11 @@ initDazib.sh : A l'exécution, va simplement réinitialiser dazib.dzb avec le co
 C'est particulièrement utile si l'on souhaite à revenir à un dazibao relativement rempli rapidement.
 Il est donc conseillé de ne pas modifier exemple, et de plutôt s'amuser sur dazib.dzb.
 
+Dans l'ajout d'un compound (ce n'est pas toujours instinctif la première fois) : 
+La première fenêtre demande le nombre de TLV total qu'aura le compound.
+Ensuite, c'est un enchainement entre une demande du type de TLV et ce qui est nécessaire pour ce TLV
+(si c'est un texte, il faudra écrire un message, l'image en choisir une, etc.).
+
 
 Projet réalisé par : 
     Adeline Hirsch
