@@ -45,4 +45,4 @@ Ensuite, c'est un enchainement entre une demande du type de TLV et ce qui est n�
 Projet réalisé par : 
     Adeline Hirsch
     Cynthia Legrand
-    Chloé Dequeker (Colin)
+    Chloé Dequeker
